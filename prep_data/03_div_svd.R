@@ -26,7 +26,6 @@ divs <- st_read(sprintf("gis/warddivs/%s/Political_Divisions.shp", PRESENT_VINTA
     warddiv = pretty_div(DIVISION_N)
   )
 
-
 pvote_svd <- get_pvote_svd(
   df_past,
   use_primary=TRUE, 
@@ -56,15 +55,13 @@ turnout_svd_primary_rep <- get_turnout_svd(
 )
 
 pvote_diagnostics(pvote_svd, divs)
-turnout_diagnostics(turnout_svd_general, divs, "General")
-turnout_diagnostics(turnout_svd_primary_dem, divs, "Democratic Primary")
-turnout_diagnostics(turnout_svd_primary_rep, divs, "Republican Primary")
+turnout_diagnostics(turnout_svd_general, divs)
+turnout_diagnostics(turnout_svd_primary_dem, divs)
+turnout_diagnostics(turnout_svd_primary_rep, divs)
 
 #########################
 ## div cats
 #########################
-
-## Div Cats only use recent years
 
 div_cats <- pvote_svd@row_scores %>%
   rename(warddiv=row) %>%
@@ -103,7 +100,7 @@ ggplot(divs %>% left_join(div_cats)) +
   geom_sf(aes(fill=cat), color=NA)
 
 turnout_df <- readRDS(most_recent_file("processed_data/df_major_")) %>%
-  filter(is_primary_office, election=="general") %>%
+  filter(is_topline_office, election=="general") %>%
   group_by(year, warddiv) %>%
   summarise(turnout=sum(votes)) %>%
   mutate(warddiv=pretty_div(warddiv))
@@ -130,8 +127,8 @@ div_cats$cat <- factor(
   )
 )
 
-saveRDS(pvote_svd, dated_stem(paste0(out_dir, "/pvote_svd"), fileext="RDS"))
-saveRDS(turnout_svd_general, dated_stem(paste0(out_dir, "/turnout_svd_general"), fileext="RDS"))
-saveRDS(turnout_svd_primary_dem, dated_stem(paste0(out_dir, "/turnout_svd_primary_dem"), fileext="RDS"))
-saveRDS(turnout_svd_primary_rep, dated_stem(paste0(out_dir, "/turnout_svd_primary_rep"), fileext="RDS"))
-saveRDS(div_cats, dated_stem(paste0(out_dir, "/div_cats"), fileext="RDS"))
+saveRDS(pvote_svd, dated_stem("pvote_svd", path=out_dir, fileext="RDS"))
+saveRDS(turnout_svd_general, dated_stem("turnout_svd_general", path=out_dir, fileext="RDS"))
+saveRDS(turnout_svd_primary_dem, dated_stem("turnout_svd_primary_dem", path=out_dir, fileext="RDS"))
+saveRDS(turnout_svd_primary_rep, dated_stem("turnout_svd_primary_rep", path=out_dir, fileext="RDS"))
+saveRDS(div_cats, dated_stem("div_cats", path=out_dir, fileext="RDS"))
