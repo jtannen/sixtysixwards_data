@@ -7,7 +7,7 @@ select <- dplyr::select
 setwd("C:/Users/Jonathan Tannen/Dropbox/sixty_six/data")
 out_dir <- "processed_data"
 
-source("../posts/svd_library/svd_for_turnout_and_pvote.R", chdir=TRUE)
+source("../posts/election_night_needle/svd_for_turnout_and_pvote.R", chdir=TRUE)
 
 SVD_METHOD = "shrinkage"
 

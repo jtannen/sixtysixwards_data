@@ -1,10 +1,12 @@
 library(dplyr)
 library(sf)
+library(magrittr)
 
 setwd("C:/Users/Jonathan Tannen/Dropbox/sixty_six/data")
 source("data_utils.R")
 
-out_dir <- "processed_data/crosswalked_results"
+out_dir <- "processed_data"
+crosswalk_dir <- "processed_data/crosswalked_results/"
 
 ###########################
 ## Crosswalk election results
@@ -65,6 +67,7 @@ fix_colnames <- function(df){
   df <- df %>%
     replace_name("CATEGORY", "OFFICE") %>%
     replace_name("SELECTION", "CANDIDATE") %>%
+    replace_name("VOTE.TYPE", "TYPE") %>%
     replace_name("VOTE.COUNT", "VOTES") %>%
     replace_name("?..WARD", "WARD") %>%
     replace_name("ï..WARD", "WARD")
@@ -89,7 +92,9 @@ for(i in 1:nrow(use_crosswalk)){
     mutate(warddiv = paste0(sprintf("%02d", WARD), sprintf("%02d", DIVISION)))
   
   if(vintage == PRESENT_VINTAGE){
-    election_df_present <- election_df
+    ## HERE
+    election_df_present <- election_df %>% 
+      select(TYPE, OFFICE, CANDIDATE, PARTY, warddiv, VOTES)
     
     missing_g1 <- unique(election_df$warddiv)[!(unique(election_df$warddiv) %in% divs$warddiv)]
     missing_g2 <- divs$warddiv[!(divs$warddiv %in% unique(election_df$warddiv))]
@@ -105,16 +110,15 @@ for(i in 1:nrow(use_crosswalk)){
       warddiv.old = paste0(WARD.old, DIV.old),
       warddiv.present = paste0(WARD.present, DIV.present)
     )
+
+    missing_g1 <- unique(election_df$warddiv)[!(unique(election_df$warddiv) %in% unique(crosswalk$warddiv.old))]
+    missing_g2 <- unique(crosswalk$warddiv.old)[!(unique(crosswalk$warddiv.old) %in% unique(election_df$warddiv))]
     
     election_df_present <- election_df %>%
       left_join(crosswalk, by=c("warddiv"="warddiv.old")) %>%
       group_by(TYPE, OFFICE, CANDIDATE, PARTY, warddiv.present) %>%
-      summarise(VOTES = sum(VOTES * weight_to_present))
-    
-    missing_g1 <- unique(election_df$warddiv)[!(unique(election_df$warddiv) %in% unique(crosswalk$warddiv.old))]
-    missing_g2 <- unique(crosswalk$warddiv.old)[!(unique(crosswalk$warddiv.old) %in% unique(election_df$warddiv))]
-    
-    election_df_present %<>% rename(warddiv=warddiv.present)
+      summarise(VOTES = sum(VOTES * weight_to_present)) %>%
+      rename(warddiv = warddiv.present)
   }
   
   
@@ -135,7 +139,7 @@ for(i in 1:nrow(use_crosswalk)){
   
   write.csv(
     election_df_present,
-    file=sprintf("%s/%s_%s_crosswalked_to_%s.csv", out_dir, year, election, PRESENT_VINTAGE),
+    file=sprintf("%s/%s_%s_crosswalked_to_%s.csv", crosswalk_dir, year, election, PRESENT_VINTAGE),
     row.names=FALSE
   )
 }
@@ -147,21 +151,23 @@ print(elections_with_mistakes)
 ## format data
 ####################
 
-files <- list.files(out_dir, pattern=sprintf("[0-9]{4}_[a-z]+_crosswalked_to_%s\\.csv", PRESENT_VINTAGE), full.names=FALSE)
+files <- list.files(crosswalk_dir, pattern=sprintf("[0-9]{4}_[a-z]+_crosswalked_to_%s\\.csv", PRESENT_VINTAGE), full.names=FALSE)
 
 df_list <- list()
 for(file in files) {
   year_char <- substr(file, 1, 4)
   election_char <- gsub("^[0-9]{4}_([a-z]+)_.*$", "\\1", file)
-  df_list[[file]] <- readr::read_csv(sprintf("%s/%s", out_dir, file), col_types="cccccdcc") %>%
-    mutate(year = year_char, election=election_char) %>%
-    select(TYPE, OFFICE, CANDIDATE, PARTY, warddiv, VOTES, year, election)
+  df_list[[file]] <- readr::read_csv(sprintf("%s/%s", crosswalk_dir, file), col_types="cccccdcc") %>%
+    mutate(year = year_char, election=election_char) 
 }
 df <- bind_rows(df_list)
-
 names(df) <- tolower(names(df))
 
-df$party[df$party == "DEMOCRAT"] <- "DEMOCRATIC"
+replace_value <- function(value, old, new){
+  ifelse(value == old, new, value)
+}
+
+df$party <- replace_value(df$party, "DEMOCRAT", "DEMOCRATIC")
 
 ## remove party info in office
 df$office <- gsub("-\\s?(D|R|DEM|REP)$", "", df$office)
@@ -171,10 +177,13 @@ df$office <- gsub("-(D|R)-", "-", df$office)
 df$office <- gsub("\\s+$", "", df$office)
 
 ## fix office names
-df$office[df$office == 'PRESIDENT AND VICE PRESIDENT OF THE UNITED STATES'] <- 'PRESIDENT OF THE UNITED STATES'
-df$office[df$office == 'GOVERNOR AND LIEUTENANT GOVERNOR'] <- 'GOVERNOR'
-df$office[df$office == 'COUNCIL AT-LARGE'] <- 'COUNCIL AT LARGE'
-df$office[df$office == 'CONTROLLER'] <- 'CITY CONTROLLER'
+
+df %<>% mutate(
+  office = replace_value(office, 'PRESIDENT AND VICE PRESIDENT OF THE UNITED STATES', 'PRESIDENT OF THE UNITED STATES'),
+  office = replace_value(office, 'GOVERNOR AND LIEUTENANT GOVERNOR', 'GOVERNOR'),
+  office = replace_value(office, 'COUNCIL AT-LARGE', 'COUNCIL AT LARGE'),
+  office = replace_value(office, 'CONTROLLER', 'CITY CONTROLLER')
+)
 df$office <- gsub("^REPRESENTATIVE IN THE UNITED STATES CONGRESS(.*)", "REPRESENTATIVE IN CONGRESS\\1", df$office)
 
 df$candidate <- gsub("\\s+", " ", df$candidate)
@@ -236,9 +245,9 @@ df_major <- df %>%
     office != "No Vote"
 	) %>%
   mutate(
-    is_primary_office = office %in% c("PRESIDENT OF THE UNITED STATES", "MAYOR", "DISTRICT ATTORNEY", "GOVERNOR")
+    is_topline_office = office %in% c("PRESIDENT OF THE UNITED STATES", "MAYOR", "DISTRICT ATTORNEY", "GOVERNOR")
   ) %>%
-  group_by(office, candidate, party, warddiv, year, election, district, ward, is_primary_office) %>%
+  group_by(office, candidate, party, warddiv, year, election, district, ward, is_topline_office) %>%
   summarise(votes = sum(votes)) %>%
   ungroup()
 	
