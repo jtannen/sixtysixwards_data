@@ -4,13 +4,13 @@ library(ggplot2)
 library(sp)
 # library(rgeos)
 
-setwd("C:/Users/Jonathan Tannen/Dropbox/sixty_six/data/gis")
-source("../../admin_scripts/util.R")
+setwd("C:/Users/Jonathan Tannen/Dropbox/sixty_six/data")
+# source("../../admin_scripts/util.R")
+source("data_utils.R")
 
 PRESENT_VINTAGE <- "201911"
-divs_present <- st_read(sprintf("%s/Political_Divisions.shp", PRESENT_VINTAGE))
+divs_present <- st_read(sprintf("gis/warddivs/%s/Political_Divisions.shp", PRESENT_VINTAGE))
 divs_present <- st_transform(divs_present, 2272)
-
 
 format_div <- function(df){
   if(!`&`(
@@ -52,8 +52,9 @@ divs_present <- format_div(divs_present)
 # 	)
 # 	
 # block_centroids <- st_transform(phila_blocks,crs=2272) %>% st_centroid
+# write.csv("census/block10_centroid_pops.csv")
 
-block_cents <- read.csv("../census/block10_centroid_pops.csv")
+block_cents <- read.csv("census/block10_centroid_pops.csv")
 block_cents <- block_cents %>% filter(COUNTYFP10 == '101')
 block_cents <- SpatialPointsDataFrame(
   block_cents[,c("INTPTLON10", "INTPTLAT10")], 
@@ -61,7 +62,6 @@ block_cents <- SpatialPointsDataFrame(
   data = block_cents
 )
 block_cents <- st_as_sf(block_cents) %>% st_transform(2272)
-
 
 get_block_div_crosswalk <- function(
 	divs_shp, 
@@ -119,13 +119,13 @@ original_gis_paths <- c(
 
 for(i in 1:length(original_gis_paths)){
 	vintage <- names(original_gis_paths)[i]
-	file <- original_gis_paths[i]
+	file <- sprintf("gis/warddivs/%s", original_gis_paths[i])
 
 	print("##############################")
 	print(vintage)
 	print("##############################")
 
-	out_dir <- "../gis_crosswalks/"
+	out_dir <- "gis_crosswalks"
 	
 	divs <- st_read(file, quiet = TRUE)
 	divs <- divs %>% format_div()
@@ -171,7 +171,6 @@ for(i in 1:length(original_gis_paths)){
 }
 
 ###### Block Groups
-setwd("../gis_crosswalks/")
 files <- list.files(pattern = "blocks10_to_divs_.*Rds")
 
 out_path <- "."
