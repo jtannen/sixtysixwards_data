@@ -5,8 +5,7 @@ library(sp)
 # library(rgeos)
 
 setwd("C:/Users/Jonathan Tannen/Dropbox/sixty_six/data")
-# source("../../admin_scripts/util.R")
-source("data_utils.R")
+source("prep_data/data_utils.R")
 
 PRESENT_VINTAGE <- "201911"
 divs_present <- st_read(sprintf("gis/warddivs/%s/Political_Divisions.shp", PRESENT_VINTAGE))

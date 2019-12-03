@@ -3,7 +3,7 @@ library(sf)
 library(magrittr)
 
 setwd("C:/Users/Jonathan Tannen/Dropbox/sixty_six/data")
-source("data_utils.R")
+source("prep_data/data_utils.R")
 
 out_dir <- "processed_data"
 crosswalk_dir <- "processed_data/crosswalked_results/"

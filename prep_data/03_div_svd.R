@@ -7,6 +7,7 @@ select <- dplyr::select
 setwd("C:/Users/Jonathan Tannen/Dropbox/sixty_six/data")
 out_dir <- "processed_data"
 
+source("prep_data/data_utils.R")
 source("../posts/election_night_needle/svd_for_turnout_and_pvote.R", chdir=TRUE)
 
 SVD_METHOD = "shrinkage"
@@ -20,7 +21,7 @@ df_past <- most_recent_file("processed_data/df_major_") %>%
   mutate(warddiv = paste0(substr(warddiv,1,2),"-",substr(warddiv,3,4))) %>%
   filter(candidate != "Write In")
 
-divs <- st_read(sprintf("gis/%s/Political_Divisions.shp", PRESENT_VINTAGE)) %>%
+divs <- st_read(sprintf("gis/warddivs/%s/Political_Divisions.shp", PRESENT_VINTAGE)) %>%
   mutate(
     warddiv = pretty_div(DIVISION_N)
   )
