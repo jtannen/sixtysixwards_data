@@ -2,15 +2,17 @@ library(dplyr)
 library(sf)
 
 setwd("C:/Users/Jonathan Tannen/Dropbox/sixty_six/data")
-source("../admin_scripts/util.R")
+source("data_utils.R")
 
-out_dir <- "processed_data"
+out_dir <- "processed_data/crosswalked_results"
 
 ###########################
 ## Crosswalk election results
 ###########################
 PRESENT_VINTAGE <- 201911
-divs <- st_read("gis/201911/Political_Divisions.shp") %>%
+divs <- st_read(
+  sprintf("gis/warddivs/%s/Political_Divisions.shp", PRESENT_VINTAGE)
+) %>%
   rename(warddiv=DIVISION_N)
 
 use_crosswalk <- tribble(
@@ -49,7 +51,8 @@ use_crosswalk <- tribble(
   2017, "general", 2016,
   2018, "primary", 2019,
   2018, "general", 2019,
-  2019, "primary", 2019
+  2019, "primary", 2019,
+  2019, "general", 201911
 )
 
 fix_colnames <- function(df){
@@ -110,6 +113,8 @@ for(i in 1:nrow(use_crosswalk)){
     
     missing_g1 <- unique(election_df$warddiv)[!(unique(election_df$warddiv) %in% unique(crosswalk$warddiv.old))]
     missing_g2 <- unique(crosswalk$warddiv.old)[!(unique(crosswalk$warddiv.old) %in% unique(election_df$warddiv))]
+    
+    election_df_present %<>% rename(warddiv=warddiv.present)
   }
   
   
@@ -127,8 +132,6 @@ for(i in 1:nrow(use_crosswalk)){
       )
     )
   }
-  
-  election_df_present <- rename(election_df_present, warddiv=warddiv.present)
   
   write.csv(
     election_df_present,
@@ -220,10 +223,7 @@ table(paste(df$year, df$election), fix_retention)
 
 df$office[fix_retention] <- paste0("RETENTION - ", df$office[fix_retention])
 
-
-
 df$ward <- substr(df$warddiv, 1, 2)
-
 
 df_major <- df %>% 
   ungroup() %>%
