@@ -1,4 +1,4 @@
-# Sixty-Six Wards Data Prep
+# Sixty-Six Wards Data
 
 ## Getting Started
 
@@ -33,4 +33,7 @@ The scripts in prep_data create those processed outputs from raw_data.
 ## Raw Data
 I couldn't do this without the fantastic open data work of the City Commissioners' Office and [Open Data Philly](https://opendataphilly.org). The raw data I use here includes historic GIS boundaries for divisions, the raw election results from [philadelphiavotes.com](https://philadelphiavotes.com), and Census data downloaded from American Fact Finder.
 
-## Questions? Concerns?
+## Questions? Comments?
+This is **very much** a work in progress. If you try to use the data and encounter any frictions, please let me know!
+
+If you use the data, please cite me, and this repo.
