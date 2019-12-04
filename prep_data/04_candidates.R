@@ -1,7 +1,7 @@
 library(tidyverse)
 
 setwd("C:/Users/Jonathan Tannen/Dropbox/sixty_six/data")
-source("../admin_scripts/util.R")
+source("prep_data/data_utils.R")
 out_dir <- "processed_data"
 
 df_major <- readRDS(
@@ -47,7 +47,7 @@ names <- gsub(first_name_re, "\\2", names) %>% fix_spaces()
 
 candidates_to_races$middle_name <- names
 
-candidate_fixes <- read_csv("../admin_scripts/prep_data/tmp/candidate_fixes_2019_10_13.csv") %>%
+candidate_fixes <- read_csv("prep_data/tmp/candidate_fixes_2019_10_13.csv") %>%
   mutate_at(.vars = vars(ends_with("_fix")), .funs=list(~ ifelse(is.na(.), "", .)))
 
 fix_merge <- candidates_to_races %>% 
@@ -79,7 +79,7 @@ if(FALSE){
     candidates_to_races %>% 
       select(year, election, office, candidate, first_name, middle_name, last_name, suffix) %>%
       unique(),
-    path=dated_stem("../admin_scripts/prep_data/tmp/candidates_to_races", fileext="csv")
+    path=dated_stem("prep_data/tmp/candidates_to_races", fileext="csv")
   )
 }
 
@@ -115,9 +115,20 @@ candidates_to_races <- left_join(
   select(year, election, office, district, party, candidate, candidate_id)
 
 
-saveRDS(candidates, file=dated_stem("processed_data//candidates", fileext="Rds"))
-saveRDS(candidates_to_races, file=dated_stem("processed_data//candidates_to_races", fileext="Rds"))
-
+saveRDS(
+  candidates, 
+  file=dated_stem(
+    sprintf("%s/candidates", out_dir),
+    fileext="Rds"
+  )
+)
+saveRDS(
+  candidates_to_races, 
+  file=dated_stem(
+    sprintf("%s/candidates_to_races", out_dir),
+    fileext="Rds"
+  )
+)
 
 candidate_fixes$candidate_id <- gsub("\\s+", " ", with(candidate_fixes, paste(first_name_fix, middle_name_fix, last_name_fix, suffix_fix)))
 candidate_fixes$candidate_id <- gsub("\\s$", "", candidate_fixes$candidate_id)
@@ -132,6 +143,6 @@ saveRDS(
       select(candidate_id, ballot_name) %>%
       unique()
   ),
-  file=dated_stem("processed_data/candidate_names", fileext="Rds")
+  file=dated_stem(sprintf("%s/candidate_names", out_dir), fileext="Rds")
 )
 
